@@ -3,6 +3,8 @@ public class App {
 
         Server server = new Server();
         ConfigReader configReader = new ConfigReader();
+        FileModel.initTypeFiles();
+
         Boolean useDefaultSettings
                 = configReader.readConfig("/home/andreynt/park/Highload/config.json");
 

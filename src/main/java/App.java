@@ -5,8 +5,13 @@ public class App {
         ConfigReader configReader = new ConfigReader();
         FileModel.initTypeFiles();
 
-        Boolean useDefaultSettings
-                = configReader.readConfig("/home/andreynt/park/Highload/config.json");
+        boolean useDefaultSettings = false;
+        try {
+            configReader.readConfig("/etc/httpd.conf");
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            useDefaultSettings = true;
+        }
 
         if (!useDefaultSettings) {
             configReader.setServerSettings(server);

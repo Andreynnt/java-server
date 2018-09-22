@@ -4,7 +4,7 @@ import java.util.Date;
 public class Server {
     private Integer port = 8080;
     private Integer maxThreadsCount = 4;
-    private String documentsRoot = "def_root";
+    private String documentsRoot = "/home/andreynt/park/Highload";
 
     public void setPort(Integer port) {
         this.port = port;

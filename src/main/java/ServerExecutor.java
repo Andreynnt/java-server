@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.URLDecoder;
-import java.util.Date;
 
 
 public class ServerExecutor implements Runnable {
@@ -31,18 +30,19 @@ public class ServerExecutor implements Runnable {
             System.out.println("Requested file = " + firstLine[1]);
             System.out.println();
 
-            switch (firstLine[0].toLowerCase()) {
-                case "get": responseToGet(firstLine[1], firstLine[2]);
-                case "head": responseToHead();
-                default: responseNotAllowed();
+            if (firstLine[0].toLowerCase().equals("get") || firstLine[0].toLowerCase().equals("head")) {
+                response(firstLine[1], firstLine[0]);
+            } else {
+                responseNotAllowed();
             }
-            closeConnection();
         } catch(Exception e) {
             System.err.println(e.toString());
+        } finally {
+            closeConnection();
         }
     }
 
-    private void responseToGet(String fileName, String httpVersion) {
+    private void response(String fileName, String method) {
         try {
             fileName = URLDecoder.decode(fileName, "UTF-8");
         } catch (Exception e) {
@@ -54,53 +54,53 @@ public class ServerExecutor implements Runnable {
         if (fileModel.isDir()) {
             fileModel.setName(fileName + "index.html");
             fileModel.setType("html");
-        } else if (!fileModel.isValidType()){
-             System.err.println("Bad type for file: " + fileName);
-             responseNotAllowed();
-             closeConnection();
-             return;
+            File file = getFile(WEB_ROOT + fileModel.getName());
+            //no index file
+            if (!file.canRead()) {
+                responseForbidden();
+                return;
+            }
+        } else {
+            File file = getFile(WEB_ROOT + fileModel.getName());
+
+            if (!isValidRoot(file)) {
+                return;
+            }
+
+            if (!fileModel.isValidType()) {
+                System.err.println("Bad type for file: " + fileName);
+                responseNotAllowed();
+                return;
+            }
         }
 
         try {
-            sendResponse(fileModel, "get", httpVersion);
+            sendResponse(fileModel, method);
         } catch (Exception e) {
             System.err.println("Error in sendResponse()" + e.toString());
         }
     }
 
-    private void sendResponse(FileModel fileModel, String method, String httpVersion) throws IOException {
+    private void sendResponse(FileModel fileModel, String method) throws IOException {
         File file = getFile(WEB_ROOT + fileModel.getName());
 
         if (!file.canRead()) {
             responseNotFound();
-            closeConnection();
             return;
         }
 
-//        System.out.println("File WEB_ROOT + name = " + WEB_ROOT + fileModel.getName());
-//        System.out.println("File type = " + fileModel.getType());
-//        System.out.println("File canonical path = " + file.getCanonicalPath());
-//        System.out.println("File fileLength = " + (int) file.length());
-
-        if (file.getCanonicalPath().startsWith(WEB_ROOT)) {
-            int fileLength = (int) file.length();
-            responseOkHeaders(fileLength, fileModel.getType());
-
-            if (method.toLowerCase().equals("get")) {
-                byte[] fileData = readFileData(file, fileLength);
-                outputData.write(fileData, 0, fileLength);
-                outputData.flush();
-            }
-        } else {
-            responseNotAllowed();
-            System.err.println("Can't read file or inaccessible WEB_ROOT");
+        if (!isValidRoot(file)) {
+            return;
         }
 
-        closeConnection();
-    }
+        int fileLength = (int) file.length();
+        responseOkHeaders(fileLength, fileModel.getType());
 
-    private void responseToHead() {
-
+        if (method.toLowerCase().equals("get")) {
+            byte[] fileData = readFileData(file, fileLength);
+            outputData.write(fileData, 0, fileLength);
+            outputData.flush();
+        }
     }
 
     private void responseOkHeaders(int length, String contentType) {
@@ -129,6 +129,21 @@ public class ServerExecutor implements Runnable {
     }
 
 
+    private boolean isValidRoot(File file) {
+        try {
+            if (!file.getCanonicalPath().startsWith(WEB_ROOT)) {
+                responseForbidden();
+                System.err.println("Can't read file or inaccessible WEB_ROOT");
+                return false;
+            } else {
+                return true;
+            }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+        }
+        return false;
+    }
+
     private byte[] readFileData(File file, int fileLength) throws IOException {
         FileInputStream fileIn = null;
         byte[] fileData = new byte[fileLength];
@@ -140,17 +155,16 @@ public class ServerExecutor implements Runnable {
             if (fileIn != null)
                 fileIn.close();
         }
-
         return fileData;
     }
 
     private File getFile(String fileName) {
         final int posOfQueryStart = fileName.indexOf('?');
+
         if (posOfQueryStart == -1) {
             return new File(fileName);
         } else {
-            return new File(fileName.substring(0,
-                    WEB_ROOT.length() + posOfQueryStart));
+            return new File(fileName.substring(0, posOfQueryStart));
         }
     }
 

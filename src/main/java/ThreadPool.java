@@ -14,16 +14,13 @@ public class ThreadPool implements Executor {
 
     @Override
     public void execute(Runnable executor) {
-        if (executor != null) {
-            synchronized (this) {
-                if (!tasks.offer(executor)) {
-                    System.out.println("Problem with tasks.offer(executor)");
-                }
-                if (currentThreadCount < maxThreadCount) {
-                    System.out.println("Create new thread");
-                    new Thread(new Worker()).start();
-                    currentThreadCount++;
-                }
+        synchronized (this) {
+            if (!tasks.offer(executor)) {
+                System.out.println("Problem with tasks.offer(executor)");
+            }
+            if (currentThreadCount < maxThreadCount) {
+                new Thread(new Worker()).start();
+                currentThreadCount++;
             }
         }
     }

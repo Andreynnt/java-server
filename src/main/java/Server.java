@@ -3,7 +3,7 @@ import java.util.Date;
 
 public class Server {
     private Integer port = 8080;
-    private Integer maxThreadsCount = 1;
+    private Integer maxThreadsCount = 4;
     private String documentsRoot = "/home/andreynt/park/Highload";
 
     public void setPort(Integer port) {
@@ -22,12 +22,10 @@ public class Server {
         try {
             ServerSocket serverSocket = new ServerSocket(port);
             ServerExecutor.setWebRoot(documentsRoot);
-
-            final ThreadPool threadPool= new ThreadPool(maxThreadsCount);
+            final ThreadPool threadPool = new ThreadPool(maxThreadsCount);
 
             while (true) {
                 ServerExecutor serverExecutor = new ServerExecutor(serverSocket.accept());
-                System.out.println("Connecton opened. (" + new Date() + ")");
                 threadPool.execute(serverExecutor);
             }
 

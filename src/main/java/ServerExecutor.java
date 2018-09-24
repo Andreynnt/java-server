@@ -26,17 +26,13 @@ public class ServerExecutor implements Runnable {
             outputData = new BufferedOutputStream(socket.getOutputStream());
             String[] firstLine = readFirstLine();
 
-            System.out.println("HTTP version = " + firstLine[2]);
-            System.out.println("Requested file = " + firstLine[1]);
-            System.out.println();
-
             if (firstLine[0].toLowerCase().equals("get") || firstLine[0].toLowerCase().equals("head")) {
                 response(firstLine[1], firstLine[0]);
             } else {
                 responseNotAllowed();
             }
         } catch(Exception e) {
-            System.err.println(e.toString());
+            e.printStackTrace();
         } finally {
             closeConnection();
         }
@@ -63,12 +59,7 @@ public class ServerExecutor implements Runnable {
         } else {
             File file = getFile(WEB_ROOT + fileModel.getName());
 
-            if (!isValidRoot(file)) {
-                return;
-            }
-
-            if (!fileModel.isValidType()) {
-                System.err.println("Bad type for file: " + fileName);
+            if (!isValidRoot(file) || !fileModel.isValidType()) {
                 responseNotAllowed();
                 return;
             }
@@ -90,6 +81,7 @@ public class ServerExecutor implements Runnable {
         }
 
         if (!isValidRoot(file)) {
+            responseNotAllowed();
             return;
         }
 
@@ -125,7 +117,8 @@ public class ServerExecutor implements Runnable {
     }
 
     private String[] readFirstLine() throws IOException {
-        return inputData.readLine().split("\\s+");
+        String line = inputData.readLine();
+        return line.split("\\s+");
     }
 
 
@@ -139,7 +132,7 @@ public class ServerExecutor implements Runnable {
                 return true;
             }
         } catch (Exception e) {
-            System.err.println(e.toString());
+            System.err.println("file.getCanonicalPath().startsWith(WEB_ROOT) " + e.toString());
         }
         return false;
     }
@@ -152,8 +145,9 @@ public class ServerExecutor implements Runnable {
             fileIn = new FileInputStream(file);
             fileIn.read(fileData);
         } finally {
-            if (fileIn != null)
+            if (fileIn != null) {
                 fileIn.close();
+            }
         }
         return fileData;
     }
@@ -172,17 +166,17 @@ public class ServerExecutor implements Runnable {
         try {
             inputData.close();
         } catch (Exception e) {
-            System.err.println(e.toString());
+            System.err.println("inputData.close() " + e.toString());
         }
         try {
             outputHeaders.close();
         } catch (Exception e) {
-            System.err.println(e.toString());
+            System.err.println("outputHeaders.close() " + e.toString());
         }
         try {
             outputData.close();
         } catch (Exception e) {
-            System.err.println(e.toString());
+            System.err.println("outputData.close() " + e.toString());
         }
     }
 }

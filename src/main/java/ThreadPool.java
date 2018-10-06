@@ -1,46 +1,47 @@
 import java.util.Queue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ThreadPool implements Executor {
-    private Integer maxThreadCount = 0;
-    private Integer currentThreadCount = 0;
-    private Queue<Runnable> tasks;
+public class ThreadPool {
+    private final Queue<Runnable> tasks;
+    private final Worker[] threads;
 
     public ThreadPool(Integer maxThreadsCount) {
-        this.maxThreadCount = maxThreadsCount;
         tasks = new LinkedBlockingQueue<>();
+        threads = new Worker[maxThreadsCount];
+
+        for (int i = 0; i < maxThreadsCount; i++) {
+            threads[i] = new Worker();
+            threads[i].start();
+        }
+
     }
 
-    @Override
-    public void execute(Runnable executor) {
-        synchronized (this) {
-            if (!tasks.offer(executor)) {
-                System.out.println("Problem with tasks.offer(executor)");
-            }
-            if (currentThreadCount < maxThreadCount) {
-                new Thread(new Worker()).start();
-                currentThreadCount++;
-            }
+    public void execute(Runnable task) {
+        synchronized (tasks) {
+            tasks.add(task);
+            tasks.notify();
         }
     }
 
-    private final class Worker implements Runnable {
-        @Override
+    private class Worker extends Thread {
         public void run() {
+            Runnable task;
             while (true) {
-                final Runnable task;
-                synchronized (this) {
+                synchronized(tasks) {
+                    while (tasks.isEmpty()) {
+                        try {
+                            tasks.wait();
+                        } catch (Exception e) {
+                            System.out.println(e.toString());
+                        }
+                    }
                     task = tasks.poll();
                 }
-
-                if (task != null) {
+                try {
                     task.run();
-                } else {
-                    synchronized (this) {
-                        currentThreadCount--;
-                    }
-                    return;
+                } catch (Exception e) {
+                    System.out.println(e.toString());
+
                 }
             }
         }

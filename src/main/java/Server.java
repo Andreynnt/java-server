@@ -3,8 +3,8 @@ import java.util.Date;
 
 public class Server {
     private Integer port = 8080;
-    private Integer maxThreadsCount = 4;
-    private String documentsRoot = "/home/andreynt/park/Highload";
+    private Integer maxThreadsCount = 64;
+    private String documentsRoot = "/Users/andreynnt/Documents/park/highload/java-server/httptest";
 
     public void setPort(Integer port) {
         this.port = port;

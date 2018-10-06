@@ -32,7 +32,7 @@ public class ServerExecutor implements Runnable {
                 responseNotAllowed();
             }
         } catch(Exception e) {
-            e.printStackTrace();
+            System.out.println(e.toString());
         } finally {
             closeConnection();
         }
@@ -164,19 +164,10 @@ public class ServerExecutor implements Runnable {
 
     private void closeConnection() {
         try {
-            inputData.close();
+            this.inputData.close();
+            this.socket.close();
         } catch (Exception e) {
-            System.err.println("inputData.close() " + e.toString());
-        }
-        try {
-            outputHeaders.close();
-        } catch (Exception e) {
-            System.err.println("outputHeaders.close() " + e.toString());
-        }
-        try {
-            outputData.close();
-        } catch (Exception e) {
-            System.err.println("outputData.close() " + e.toString());
+            System.err.println(e.toString());
         }
     }
 }
